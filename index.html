@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Liquid Global — Tokenized Securities Platform</title>
+<meta name="description" content="Full-stack platform for tokenized securities — AI compliance, institutional blockchain, 24/7 trading. SEC-qualified Reg A+. Tradeable from day one.">
+<meta name="theme-color" content="#000000">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Syne:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+<script type="importmap">
+{ "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+}}
+</script>
+<style>
+/* ========================================
+   RESET & BASE
+   ======================================== */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:auto;overflow-x:hidden}
+body{background:#000;color:#C0C0C0;font-family:'DM Sans',sans-serif;overflow-x:hidden;cursor:default}
+::selection{background:rgba(201,168,76,.3);color:#E0E0E0}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:#000}
+::-webkit-scrollbar-thumb{background:#C9A84C;border-radius:3px}
+
+/* ========================================
+   TYPOGRAPHY
+   ======================================== */
+.font-display{font-family:'Playfair Display',serif}
+.font-heading{font-family:'Syne',sans-serif}
+.font-mono{font-family:'JetBrains Mono',monospace}
+.gold{color:#C9A84C}
+.silver-light{color:#E0E0E0}
+.silver-muted{color:#808080}
+
+/* ========================================
+   THREE.JS CANVAS
+   ======================================== */
+#scene{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0;pointer-events:none}
+
+/* ========================================
+   SCROLL CONTAINER
+   ======================================== */
+.scroll-container{position:relative;z-index:1;width:100%;height:900vh;pointer-events:none}
+.scroll-trigger{height:112.5vh}
+
+/* ========================================
+   FILM GRAIN OVERLAY
+   ======================================== */
+.grain{position:fixed;top:0;left:0;width:100%;height:100%;z-index:3;pointer-events:none;opacity:.04;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+}
+
+/* ========================================
+   PROGRESS BAR
+   ======================================== */
+.progress-bar{position:fixed;bottom:0;left:0;height:2px;background:linear-gradient(90deg,#A67C00,#C9A84C,#E8D48B);z-index:200;transition:width .15s ease-out;pointer-events:none}
+
+/* ========================================
+   GOLD CURSOR
+   ======================================== */
+.cursor-glow{position:fixed;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,.05) 0%,transparent 70%);pointer-events:none;z-index:2;transform:translate(-50%,-50%);display:none}
+@media(hover:hover){.cursor-glow{display:block}}
+
+/* ========================================
+   NAVIGATION
+   ======================================== */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:20px 40px;display:flex;align-items:center;justify-content:space-between;transition:background .4s,backdrop-filter .4s;pointer-events:auto}
+nav.scrolled{background:rgba(0,0,0,.6);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.nav-logo{font-family:'Syne',sans-serif;font-size:16px;letter-spacing:6px;user-select:none}
+.nav-logo span:first-child{color:#C9A84C;font-weight:700}
+.nav-logo span:last-child{color:#C0C0C0;font-weight:400}
+.nav-links{display:flex;gap:22px;align-items:center}
+.nav-links a{font-family:'DM Sans',sans-serif;font-size:13px;color:#808080;text-decoration:none;transition:color .3s;letter-spacing:.3px;pointer-events:auto;cursor:pointer}
+.nav-links a:hover,.nav-links a.active{color:#C9A84C}
+.nav-cta{font-family:'Syne',sans-serif;font-size:13px;color:#C9A84C !important;border:1px solid rgba(201,168,76,.4);padding:10px 24px;border-radius:6px;transition:all .3s;cursor:pointer}
+.nav-cta:hover{background:#C9A84C;color:#000 !important;box-shadow:0 0 30px rgba(201,168,76,.3)}
+.nav-hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;pointer-events:auto;z-index:101}
+.nav-hamburger span{width:24px;height:1.5px;background:#C9A84C;transition:all .3s}
+.mobile-menu{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);backdrop-filter:blur(20px);z-index:99;flex-direction:column;align-items:center;justify-content:center;gap:36px}
+.mobile-menu.open{display:flex}
+.mobile-menu a{font-family:'Syne',sans-serif;font-size:24px;color:#C0C0C0;text-decoration:none;transition:color .3s}
+.mobile-menu a:hover{color:#C9A84C}
+@media(max-width:768px){
+  .nav-links{display:none}
+  .nav-hamburger{display:flex}
+  nav{padding:16px 20px}
+}
+
+/* ========================================
+   SECTION OVERLAYS
+   ======================================== */
+.section-overlay{position:fixed;z-index:10;pointer-events:none;opacity:0}
+.section-overlay.visible{pointer-events:auto}
+.section-overlay *{pointer-events:auto}
+
+/* ========================================
+   GLASS PANEL
+   ======================================== */
+.glass{background:rgba(5,5,5,.7);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(201,168,76,.1);border-radius:16px;box-shadow:0 0 80px rgba(201,168,76,.04),0 0 200px rgba(0,0,0,.5);padding:40px;position:relative;overflow:hidden}
+.glass::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,.15),transparent)}
+.glass::after{content:'';position:absolute;top:0;left:0;right:50%;bottom:50%;background:radial-gradient(ellipse at 20% 0%,rgba(201,168,76,.04),transparent 60%);pointer-events:none}
+
+/* ========================================
+   HERO
+   ======================================== */
+#hero{top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;max-width:720px;width:90%}
+#hero .pre-heading{font-family:'JetBrains Mono',monospace;color:#C9A84C;font-size:13px;letter-spacing:5px;text-transform:uppercase;margin-bottom:20px}
+#hero h1{font-family:'Playfair Display',serif;color:#fff;font-size:clamp(32px,5.5vw,64px);line-height:1.08;margin-bottom:20px;font-weight:700}
+#hero .sub{color:#C0C0C0;font-size:clamp(15px,1.8vw,18px);line-height:1.7;max-width:600px;margin:0 auto 32px}
+.hero-buttons{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:36px}
+.btn-gold{font-family:'Syne',sans-serif;font-size:14px;font-weight:600;background:linear-gradient(135deg,#C9A84C,#A67C00);color:#000;border:none;padding:14px 32px;border-radius:8px;cursor:pointer;transition:all .3s;letter-spacing:.3px}
+.btn-gold:hover{box-shadow:0 0 35px rgba(201,168,76,.35);transform:scale(1.03)}
+.btn-outline{font-family:'Syne',sans-serif;font-size:14px;font-weight:500;background:transparent;color:#C9A84C;border:1px solid rgba(201,168,76,.35);padding:14px 32px;border-radius:8px;cursor:pointer;transition:all .3s;letter-spacing:.3px}
+.btn-outline:hover{background:rgba(201,168,76,.08);border-color:rgba(201,168,76,.6)}
+.hero-stats{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.stat-badge{background:rgba(0,0,0,.5);border:1px solid rgba(201,168,76,.08);border-radius:12px;padding:14px 22px;text-align:center;backdrop-filter:blur(12px)}
+.stat-badge .num{font-family:'JetBrains Mono',monospace;color:#C9A84C;font-size:22px;font-weight:500;display:block}
+.stat-badge .label{font-family:'DM Sans',sans-serif;color:#808080;font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-top:4px;display:block}
+.scroll-hint{position:fixed;bottom:32px;left:50%;transform:translateX(-50%);z-index:10;text-align:center;opacity:0}
+.scroll-hint span{font-family:'DM Sans',sans-serif;color:#808080;font-size:11px;letter-spacing:2px;display:block;margin-bottom:8px}
+.scroll-hint .line{width:1px;height:28px;background:linear-gradient(to bottom,#C9A84C,transparent);margin:0 auto;animation:scrollPulse 2s ease-in-out infinite}
+@keyframes scrollPulse{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(6px)}}
+
+/* ========================================
+   CONTENT SECTIONS (Shared)
+   ======================================== */
+.section-label{font-family:'JetBrains Mono',monospace;color:#C9A84C;font-size:11px;letter-spacing:5px;text-transform:uppercase;margin-bottom:14px;display:block}
+.section-title{font-family:'Playfair Display',serif;color:#E0E0E0;font-size:clamp(28px,3.5vw,42px);line-height:1.15;margin-bottom:16px;font-weight:700}
+.section-body{color:#C0C0C0;font-size:15px;line-height:1.75;margin-bottom:24px}
+
+/* Right panel positioning */
+.panel-right{top:50%;right:5vw;transform:translateY(-50%);max-width:480px;width:42vw}
+.panel-left{top:50%;left:5vw;transform:translateY(-50%);max-width:480px;width:42vw}
+.panel-center{top:50%;left:50%;transform:translate(-50%,-50%);max-width:620px;width:85vw}
+@media(max-width:768px){
+  .panel-right,.panel-left,.panel-center{left:50%;right:auto;transform:translate(-50%,-50%);width:90vw;max-width:none}
+}
+
+/* Stat rows */
+.stat-row{border-left:3px solid #C9A84C;padding-left:16px;margin-bottom:18px}
+.stat-row .value{font-family:'JetBrains Mono',monospace;color:#C9A84C;font-size:22px;font-weight:500}
+.stat-row .desc{color:#808080;font-size:12px;margin-top:2px}
+
+/* Lifecycle steps */
+.step{display:flex;gap:16px;align-items:flex-start;margin-bottom:20px;position:relative}
+.step::after{content:'';position:absolute;left:15px;top:36px;bottom:-14px;width:1px;border-left:1px dashed rgba(201,168,76,.2)}
+.step:last-child::after{display:none}
+.step-num{width:32px;height:32px;border-radius:50%;border:1px solid rgba(201,168,76,.4);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;color:#C9A84C;font-size:11px;flex-shrink:0;background:rgba(0,0,0,.5)}
+.step-content .step-name{font-family:'Syne',sans-serif;color:#E0E0E0;font-size:15px;font-weight:600}
+.step-content .step-desc{color:#808080;font-size:13px;margin-top:3px;line-height:1.5}
+
+/* Feature blocks */
+.feature-block{padding:18px 0;border-bottom:1px solid rgba(201,168,76,.08)}
+.feature-block:last-child{border-bottom:none}
+.feature-block .ft-title{font-family:'Syne',sans-serif;color:#E0E0E0;font-size:16px;font-weight:600;margin-bottom:4px}
+.feature-block .ft-desc{color:#808080;font-size:13px;line-height:1.6}
+
+/* Two columns */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+@media(max-width:600px){.two-col{grid-template-columns:1fr}}
+.col-title{font-family:'Syne',sans-serif;color:#C9A84C;font-size:17px;font-weight:600;margin-bottom:12px}
+.col-item{color:#C0C0C0;font-size:14px;line-height:1.7;padding-left:14px;position:relative;margin-bottom:8px}
+.col-item::before{content:'';position:absolute;left:0;top:10px;width:4px;height:4px;border-radius:50%;background:#C9A84C}
+.pill-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.pill{font-family:'DM Sans',sans-serif;font-size:11px;color:#808080;border:1px solid rgba(201,168,76,.15);border-radius:20px;padding:5px 14px;letter-spacing:.3px}
+
+/* Team */
+.team-row{display:flex;gap:14px;align-items:center;margin-bottom:16px}
+.team-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#C9A84C,#808080);flex-shrink:0}
+.team-name{font-family:'Syne',sans-serif;color:#C9A84C;font-size:14px;font-weight:600}
+.team-info{color:#808080;font-size:12px;margin-top:2px}
+.team-divider{height:1px;background:rgba(201,168,76,.1);margin:18px 0}
+.advisor-row{color:#808080;font-size:12px;line-height:1.8}
+
+/* ========================================
+   CONTACT SECTION
+   ======================================== */
+#contact{top:50%;left:50%;transform:translate(-50%,-50%);max-width:560px;width:90vw}
+#contact .glass{padding:44px 40px}
+#contact h2{font-family:'Playfair Display',serif;color:#C9A84C;font-size:clamp(28px,4vw,40px);text-align:center;margin-bottom:8px}
+#contact .contact-sub{color:#C0C0C0;font-size:15px;text-align:center;margin-bottom:28px;line-height:1.6}
+.form-field{background:rgba(201,168,76,.02);border:1px solid rgba(201,168,76,.12);border-radius:10px;padding:14px 18px;margin-bottom:12px;transition:all .3s}
+.form-field:focus-within{border-color:rgba(201,168,76,.45);box-shadow:0 0 25px rgba(201,168,76,.06);background:rgba(201,168,76,.04)}
+.form-field input,.form-field textarea,.form-field select{width:100%;background:none;border:none;outline:none;color:#E0E0E0;font-family:'DM Sans',sans-serif;font-size:15px}
+.form-field input::placeholder,.form-field textarea::placeholder{color:#555}
+.form-field select{color:#555;cursor:pointer}
+.form-field select option{background:#111;color:#E0E0E0}
+.form-field textarea{resize:vertical;min-height:70px}
+.btn-submit{width:100%;font-family:'Syne',sans-serif;font-size:15px;font-weight:600;background:linear-gradient(135deg,#C9A84C,#A67C00);color:#000;border:none;padding:16px;border-radius:10px;cursor:pointer;transition:all .3s;margin-top:6px;letter-spacing:.3px}
+.btn-submit:hover{box-shadow:0 0 40px rgba(201,168,76,.3);transform:scale(1.01)}
+.btn-submit.sent{background:#2a5a2a;color:#8f8;pointer-events:none}
+.contact-links{display:flex;justify-content:center;gap:24px;margin-top:18px}
+.contact-links a{font-family:'DM Sans',sans-serif;font-size:13px;text-decoration:none;transition:color .3s}
+.contact-footer{text-align:center;margin-top:20px;font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(192,192,192,.3);line-height:1.7;max-width:440px;margin-left:auto;margin-right:auto}
+
+/* ========================================
+   FOOTER
+   ======================================== */
+footer{position:relative;z-index:10;background:rgba(0,0,0,.9);border-top:1px solid rgba(201,168,76,.08);padding:24px 40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;pointer-events:auto;cursor:default}
+footer .f-brand{font-family:'Syne',sans-serif;color:#C9A84C;font-size:13px;letter-spacing:4px}
+footer .f-copy{color:#555;font-size:11px;font-family:'DM Sans',sans-serif}
+footer .f-links{display:flex;gap:20px}
+footer .f-links a{color:#555;font-size:11px;text-decoration:none;font-family:'DM Sans',sans-serif;transition:color .3s}
+footer .f-links a:hover{color:#C9A84C}
+@media(max-width:768px){footer{padding:20px;flex-direction:column;text-align:center}}
+</style>
+</head>
+<body>
+<script>
+function goTo(id) {
+  var el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' });
+}
+function toggleMobileMenu() {
+  document.getElementById('mobileMenu').classList.toggle('open');
+}
+function handleSubmit() {
+  var btn = document.getElementById('submitBtn');
+  var name = document.getElementById('cName').value.trim();
+  var email = document.getElementById('cEmail').value.trim();
+  if (!name || !email) {
+    btn.textContent = 'Please fill in name and email';
+    btn.style.background = '#333';
+    setTimeout(function() { btn.textContent = 'Start the Conversation'; btn.style.background = ''; }, 2000);
+    return;
+  }
+  btn.textContent = 'Sending...';
+  setTimeout(function() {
+    btn.textContent = 'Message Sent \u2713';
+    btn.classList.add('sent');
+    setTimeout(function() { btn.textContent = 'Start the Conversation'; btn.classList.remove('sent'); btn.style.background = ''; }, 4000);
+  }, 1200);
+}
+</script>
+
+<!-- Fixed Social / Legal Bar — bottom right -->
+<div style="position:fixed;bottom:16px;right:20px;z-index:100;display:flex;align-items:center;gap:16px;font-family:'DM Sans',sans-serif;font-size:11px;pointer-events:auto">
+  <a href="https://instagram.com/liquidglobal" target="_blank" rel="noopener" style="color:#555;text-decoration:none;transition:color .3s" onmouseover="this.style.color='#C9A84C'" onmouseout="this.style.color='#555'">Instagram</a>
+  <a href="https://x.com/liquidglobal" target="_blank" rel="noopener" style="color:#555;text-decoration:none;transition:color .3s" onmouseover="this.style.color='#C9A84C'" onmouseout="this.style.color='#555'">X</a>
+  <a href="https://linkedin.com/company/liquidglobal" target="_blank" rel="noopener" style="color:#555;text-decoration:none;transition:color .3s" onmouseover="this.style.color='#C9A84C'" onmouseout="this.style.color='#555'">LinkedIn</a>
+  <span style="color:#333">|</span>
+  <a href="#" onclick="event.preventDefault()" style="color:#444;text-decoration:none;transition:color .3s" onmouseover="this.style.color='#C9A84C'" onmouseout="this.style.color='#444'">Terms</a>
+  <a href="#" onclick="event.preventDefault()" style="color:#444;text-decoration:none;transition:color .3s" onmouseover="this.style.color='#C9A84C'" onmouseout="this.style.color='#444'">Privacy</a>
+</div>
+
+<!-- Film Grain -->
+<div class="grain"></div>
+
+<!-- Vignette -->
+<div style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:3;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.5) 100%)"></div>
+
+<!-- Gold Cursor Glow -->
+<div class="cursor-glow" id="cursorGlow"></div>
+
+<!-- Progress Bar -->
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- Three.js Canvas -->
+<canvas id="scene"></canvas>
+
+<!-- Navigation -->
+<nav id="mainNav">
+  <div class="nav-logo" style="cursor:pointer" onclick="goTo('anchor-home')"><span>LIQUID </span><span>GLOBAL</span></div>
+  <div class="nav-links">
+    <a href="#" onclick="event.preventDefault();goTo('anchor-challenge')">How It Works</a>
+    <a href="#" onclick="event.preventDefault();goTo('anchor-platform')">Platform</a>
+    <a href="#" onclick="event.preventDefault();goTo('anchor-technology')">Technology</a>
+    <a href="#" onclick="event.preventDefault();goTo('anchor-serve')">Markets</a>
+    <a href="#" onclick="event.preventDefault();goTo('anchor-why')">Why Us</a>
+    <a href="#" onclick="event.preventDefault();goTo('anchor-team')">Team</a>
+    <a href="#" onclick="event.preventDefault();goTo('anchor-contact')" class="nav-cta">Get Started</a>
+  </div>
+  <div class="nav-hamburger" id="hamburger" onclick="toggleMobileMenu()">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<!-- Mobile Menu -->
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#" onclick="event.preventDefault();goTo('anchor-challenge');toggleMobileMenu()">How It Works</a>
+  <a href="#" onclick="event.preventDefault();goTo('anchor-platform');toggleMobileMenu()">Platform</a>
+  <a href="#" onclick="event.preventDefault();goTo('anchor-technology');toggleMobileMenu()">Technology</a>
+  <a href="#" onclick="event.preventDefault();goTo('anchor-serve');toggleMobileMenu()">Markets</a>
+  <a href="#" onclick="event.preventDefault();goTo('anchor-why');toggleMobileMenu()">Why Us</a>
+  <a href="#" onclick="event.preventDefault();goTo('anchor-team');toggleMobileMenu()">Team</a>
+  <a href="#" onclick="event.preventDefault();goTo('anchor-contact');toggleMobileMenu()">Contact</a>
+</div>
+
+<!-- ======== CONTENT SECTIONS ======== -->
+
+<!-- HERO -->
+<div id="hero" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:999;text-align:center;max-width:720px;width:90%;pointer-events:auto;opacity:1">
+  <div class="pre-heading" id="typewriter"></div>
+  <h1>Institutional-Grade Securities.<br>Tokenized. Tradeable<br>From Day One.</h1>
+  <p class="sub">AI-powered compliance. Institutional blockchain infrastructure. 24/7 secondary trading. The full-stack platform giving mid-market companies a faster, more affordable path to raising $5M–$75M in growth capital — with securities that trade around the clock.</p>
+  <div class="hero-buttons">
+    <button class="btn-gold" onclick="goTo('anchor-contact')" style="pointer-events:auto;position:relative;z-index:50;cursor:pointer">Raise Capital</button>
+    <button class="btn-outline" onclick="goTo('anchor-platform')" style="pointer-events:auto;position:relative;z-index:50;cursor:pointer">Explore Platform</button>
+  </div>
+  <div class="hero-stats">
+    <div class="stat-badge"><span class="num" data-count="75">0</span><span class="label">$M Max Annual Raise</span></div>
+    <div class="stat-badge"><span class="num">24/7</span><span class="label">Trading</span></div>
+    <div class="stat-badge"><span class="num">T+0</span><span class="label">Settlement</span></div>
+    <div class="stat-badge"><span class="num" data-count="600">0</span><span class="label">Institutions</span></div>
+  </div>
+</div>
+
+<!-- Scroll Hint -->
+<div id="scrollHint" style="position:fixed;bottom:32px;left:50%;transform:translateX(-50%);z-index:998;text-align:center;opacity:1">
+  <span>SCROLL TO EXPLORE</span>
+  <div class="line"></div>
+</div>
+
+<!-- CHALLENGE -->
+<div class="section-overlay panel-right" id="challenge">
+  <div class="glass">
+    <span class="section-label">THE CHALLENGE</span>
+    <h2 class="section-title">Mid-Market Companies Deserve Better</h2>
+    <p class="section-body">Companies valued between $10M and $100M are the backbone of economic growth — yet they face an impossible choice: spend 18 months and seven figures chasing a traditional Series A with 7-year investor lockups, or forgo institutional capital entirely. The capital markets were never designed for companies at this stage.</p>
+    <div class="stat-row"><div class="value">18+ Months</div><div class="desc">Typical Series A fundraise timeline</div></div>
+    <div class="stat-row"><div class="value">$1M+</div><div class="desc">In legal, advisory, and compliance fees</div></div>
+    <div class="stat-row"><div class="value">7-Year Lockup</div><div class="desc">Before investors see any liquidity</div></div>
+    <p style="color:#808080;font-size:13px;margin-top:16px;line-height:1.6">Reg A+ Tier 2 permits raises of up to $75M annually and is the only SEC exemption that allows both accredited and non-accredited investors to participate — opening private-company investment to the same communities that use the product.</p>
+  </div>
+</div>
+
+<!-- PLATFORM -->
+<div class="section-overlay panel-center" id="platform">
+  <div class="glass">
+    <span class="section-label">THE PLATFORM</span>
+    <h2 class="section-title">End-to-End. Filing to Trading.</h2>
+    <p class="section-body" style="margin-bottom:20px">One integrated platform for the full lifecycle of a tokenized Reg A+ offering.</p>
+    <div class="step"><div class="step-num">01</div><div class="step-content"><div class="step-name">Origination</div><div class="step-desc">Identify and structure growth-stage capital raises</div></div></div>
+    <div class="step"><div class="step-num">02</div><div class="step-content"><div class="step-name">SEC Compliance</div><div class="step-desc">In-house counsel and AI handle the entire Form 1-A</div></div></div>
+    <div class="step"><div class="step-num">03</div><div class="step-content"><div class="step-name">Qualification</div><div class="step-desc">Full SEC review management end to end</div></div></div>
+    <div class="step"><div class="step-num">04</div><div class="step-content"><div class="step-name">Token Issuance</div><div class="step-desc">Securities tokenized on institutional blockchain</div></div></div>
+    <div class="step"><div class="step-num">05</div><div class="step-content"><div class="step-name">Capital Raise</div><div class="step-desc">Regulated broker-dealer facilitated sale</div></div></div>
+    <div class="step"><div class="step-num">06</div><div class="step-content"><div class="step-name">Secondary Trading</div><div class="step-desc">24/7 atomic settlement, cross-listed across venues</div></div></div>
+  </div>
+</div>
+
+<!-- TECHNOLOGY -->
+<div class="section-overlay panel-left" id="technology">
+  <div class="glass">
+    <span class="section-label">TECHNOLOGY</span>
+    <h2 class="section-title">Three Pillars. One Platform.</h2>
+    <div class="feature-block"><div class="ft-title">AI-Powered Compliance</div><div class="ft-desc">Our proprietary engine automates Form 1-A preparation, KYC/AML screening, and ongoing 1-K/1-SA regulatory reporting — replacing the 3-4 junior analysts traditionally required per engagement and making sub-$20M deals economically viable for the first time.</div></div>
+    <div class="feature-block"><div class="ft-title">Canton Network Infrastructure</div><div class="ft-desc">Built on the institutional-grade blockchain backed by Goldman Sachs, DTCC, Deutsche Börse, and 600+ financial institutions. Protocol-level privacy via Daml smart contracts, atomic T+0 settlement, and native compliance features — freeze, clawback, and forced transfer — required for regulated securities.</div></div>
+    <div class="feature-block"><div class="ft-title">Proprietary ATS</div><div class="ft-desc">A high-throughput central limit order book already built and operational — options-capable, 24/7, with atomic delivery-versus-payment settlement. FINRA/SEC registration is a compliance milestone, not a technical one. Cross-listed on partner exchanges for deeper liquidity.</div></div>
+    <p style="color:#555;font-size:11px;margin-top:16px;font-family:'JetBrains Mono',monospace;letter-spacing:1px">CANTON NETWORK ECOSYSTEM PARTNER</p>
+  </div>
+</div>
+
+<!-- WHO WE SERVE -->
+<div class="section-overlay panel-center" id="serve">
+  <div class="glass">
+    <span class="section-label">WHO WE SERVE</span>
+    <h2 class="section-title">Capital Markets, Reimagined</h2>
+    <p style="color:#C0C0C0;font-size:14px;margin-bottom:20px;line-height:1.6">Reg A+ Tier 2 is the only SEC exemption that permits both accredited and non-accredited investors to participate — enabling the users of a product to become owners of the company that builds it.</p>
+    <div class="two-col">
+      <div>
+        <div class="col-title">For Companies</div>
+        <div class="col-item">Raise up to $75M annually under SEC-qualified Reg A+</div>
+        <div class="col-item">Compress timelines from 18 months to weeks</div>
+        <div class="col-item">Access both institutional and retail investor bases</div>
+        <div class="col-item">Securities trade from day one — no multi-year lockups</div>
+        <div class="col-item">AI-automated ongoing compliance and reporting</div>
+      </div>
+      <div>
+        <div class="col-title">For Investors &amp; Partners</div>
+        <div class="col-item">Vetted mid-market growth companies ($10M–$100M)</div>
+        <div class="col-item">24/7 tokenized securities trading with T+0 settlement</div>
+        <div class="col-item">Institutional-grade KYC/AML and custody</div>
+        <div class="col-item">Blockchain-verified ownership and audit trails</div>
+        <div class="col-item">Cross-listed across partner exchanges for liquidity</div>
+      </div>
+    </div>
+    <div class="pill-row">
+      <div class="pill">Consumer Tech</div><div class="pill">Consumer Brands</div><div class="pill">Fintech</div><div class="pill">Real Estate & PropTech</div><div class="pill">Health Tech</div><div class="pill">EdTech</div>
+    </div>
+  </div>
+</div>
+
+<!-- WHY LIQUID GLOBAL -->
+<div class="section-overlay panel-right" id="why">
+  <div class="glass">
+    <span class="section-label">WHY LIQUID GLOBAL</span>
+    <h2 class="section-title">The Only Full-Stack Platform</h2>
+    <p class="section-body" style="font-size:14px">Existing platforms own one piece of the value chain. We own the entire vertical — eliminating handoffs, reducing cost, and compressing timelines.</p>
+    <div class="feature-block"><div class="ft-title">In-House Securities Counsel</div><div class="ft-desc">25 years of securities law. Entire SEC process managed end-to-end — Form 1-A drafting, qualification, comment responses. No outside counsel dependency, no $500/hour legal bills.</div></div>
+    <div class="feature-block"><div class="ft-title">AI Compliance Automation</div><div class="ft-desc">Former Google DeepMind leadership driving the AI engine. Replaces the 3-4 analyst headcount per deal that makes traditional sub-$20M raises uneconomical.</div></div>
+    <div class="feature-block"><div class="ft-title">Institutional Blockchain</div><div class="ft-desc">Canton Network — Goldman Sachs, DTCC, Deutsche Börse, and 600+ institutional participants. Not a startup chain. The infrastructure the world's largest financial institutions already trust.</div></div>
+    <div class="feature-block"><div class="ft-title">Proprietary Trading System</div><div class="ft-desc">Built in-house. Already operational. 24/7 with atomic settlement. Securities trade from day one — not locked for seven years.</div></div>
+  </div>
+</div>
+
+<!-- TEAM -->
+<div class="section-overlay panel-center" id="team">
+  <div class="glass">
+    <span class="section-label">LEADERSHIP</span>
+    <h2 class="section-title">Built by Operators</h2>
+    <div class="team-row"><div class="team-avatar"></div><div><div class="team-name">Aiden Polinsky</div><div class="team-info">CEO & Founder — Strategy and deal origination. UMD Smith School.</div></div></div>
+    <div class="team-row"><div class="team-avatar"></div><div><div class="team-name">Matteas Ellis</div><div class="team-info">CTO & Co-Founder — ATS architect, quantitative systems. Serial founder.</div></div></div>
+    <div class="team-row"><div class="team-avatar"></div><div><div class="team-name">Dov Schwell</div><div class="team-info">CLO — 25 years securities law. Outside GC, Genie Energy (NYSE: GNE).</div></div></div>
+    <div class="team-row"><div class="team-avatar"></div><div><div class="team-name">Roger Jin</div><div class="team-info">Chief AI Officer — Former Head of Product, Google DeepMind.</div></div></div>
+    <div class="team-row"><div class="team-avatar"></div><div><div class="team-name">David Polinsky</div><div class="team-info">Chairman — Financial markets executive. Board-level oversight.</div></div></div>
+    <div class="team-divider"></div>
+    <div class="advisor-row">
+      <strong style="color:#C9A84C">Advisors:</strong> Prof. Tej Anand — Blockchain, Columbia & UMD &nbsp;·&nbsp; Jonathan Blum — MD, Investment Banking &nbsp;·&nbsp; Marc Greenberg — CFO
+    </div>
+  </div>
+</div>
+
+<!-- CONTACT -->
+<div class="section-overlay" id="contact">
+  <div class="glass">
+    <h2>Let's Build Together</h2>
+    <p class="contact-sub">Whether you're a company ready to raise growth capital, a broker-dealer exploring blockchain infrastructure, or an institutional partner looking to participate in the next generation of securities — we'd like to hear from you.</p>
+    <div style="display:flex;gap:12px;justify-content:center;margin-bottom:24px">
+      <button class="btn-gold" style="font-size:13px;padding:12px 24px" onclick="document.getElementById('cName').focus()">Raise Capital</button>
+      <button class="btn-outline" style="font-size:13px;padding:12px 24px" onclick="goTo('anchor-platform')">Explore Platform</button>
+    </div>
+    <div class="form-field"><input type="text" id="cName" placeholder="Your name" required></div>
+    <div class="form-field"><input type="email" id="cEmail" placeholder="Email address" required></div>
+    <div class="form-field"><input type="text" id="cCompany" placeholder="Company name"></div>
+    <div class="form-field">
+      <select id="cRole"><option value="" disabled selected>I am a...</option><option>Company Raising Capital</option><option>Broker-Dealer</option><option>Institutional Investor</option><option>Technology Partner</option><option>Other</option></select>
+    </div>
+    <div class="form-field"><textarea id="cMessage" placeholder="Tell us about what you're building" rows="3"></textarea></div>
+    <button class="btn-submit" id="submitBtn" onclick="handleSubmit()">Start the Conversation</button>
+    <div class="contact-links">
+      <a href="#" onclick="event.preventDefault();goTo('anchor-platform')" style="color:#C9A84C">Explore the Platform →</a>
+    </div>
+    <div class="contact-footer">Securities offered through FINRA-registered broker-dealer partners. Liquid Global does not directly sell securities. This website does not constitute an offer to sell or solicitation to buy any securities.</div>
+  </div>
+</div>
+
+<!-- SCROLL CONTAINER -->
+<div class="scroll-container" id="scrollContainer">
+  <div class="scroll-trigger" id="anchor-home"></div>
+  <div class="scroll-trigger" id="anchor-challenge"></div>
+  <div class="scroll-trigger" id="anchor-platform"></div>
+  <div class="scroll-trigger" id="anchor-technology"></div>
+  <div class="scroll-trigger" id="anchor-serve"></div>
+  <div class="scroll-trigger" id="anchor-why"></div>
+  <div class="scroll-trigger" id="anchor-team"></div>
+  <div class="scroll-trigger" id="anchor-contact"></div>
+  <footer>
+    <div><span class="f-brand">LIQUID GLOBAL</span><span class="f-copy"> &nbsp;© 2026</span></div>
+    <div class="f-links">
+      <a href="#" onclick="event.preventDefault();goTo('anchor-platform')">Platform</a>
+      <a href="#" onclick="event.preventDefault();goTo('anchor-technology')">Technology</a>
+      <a href="#" onclick="event.preventDefault();goTo('anchor-team')">Team</a>
+      <a href="#" onclick="event.preventDefault();goTo('anchor-contact')">Contact</a>
+    </div>
+  </footer>
+</div>
+
+<!-- ======== THREE.JS + GSAP ======== -->
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+/* ==========================================
+   SCENE, CAMERA, RENDERER
+   ========================================== */
+const canvas = document.getElementById('scene');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x000000);
+scene.fog = new THREE.FogExp2(0x000000, 0.012);
+
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 500);
+camera.position.set(0, 2, 22);
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+
+/* ==========================================
+   POST-PROCESSING — BLOOM
+   ========================================== */
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloomPass = new UnrealBloomPass(
+  new THREE.Vector2(window.innerWidth, window.innerHeight),
+  0.8, 0.35, 0.3
+);
+composer.addPass(bloomPass);
+composer.addPass(new OutputPass());
+
+/* ==========================================
+   LIGHTING (Enhanced — dramatic and cinematic)
+   ========================================== */
+const keyLight = new THREE.DirectionalLight(0xC9A84C, 0.9);
+keyLight.position.set(10, 12, 8);
+scene.add(keyLight);
+
+const fillLight = new THREE.DirectionalLight(0x6677AA, 0.2);
+fillLight.position.set(-8, -4, -6);
+scene.add(fillLight);
+
+// Rim light — catches globe edges for definition
+const rimLight = new THREE.DirectionalLight(0xC9A84C, 0.4);
+rimLight.position.set(-6, 2, -10);
+scene.add(rimLight);
+
+scene.add(new THREE.AmbientLight(0x0A0A0A, 0.5));
+
+/* ==========================================
+   HELPER: Lat/Lon → Vector3
+   ========================================== */
+function ll(lat, lon, r) {
+  const phi = (90 - lat) * Math.PI / 180;
+  const theta = (lon + 180) * Math.PI / 180;
+  return new THREE.Vector3(
+    -r * Math.sin(phi) * Math.cos(theta),
+    r * Math.cos(phi),
+    r * Math.sin(phi) * Math.sin(theta)
+  );
+}
+
+/* ==========================================
+   THE GLOBE (Enhanced)
+   ========================================== */
+const globeGroup = new THREE.Group();
+scene.add(globeGroup);
+
+// Dark glass outer sphere — polished obsidian look
+const globeGeo = new THREE.SphereGeometry(5, 96, 96);
+const globeMat = new THREE.MeshPhysicalMaterial({
+  color: 0x060606, metalness: 0.4, roughness: 0.03,
+  clearcoat: 1.0, clearcoatRoughness: 0.02,
+  transparent: true, opacity: 0.93,
+  envMapIntensity: 0.5
+});
+globeGroup.add(new THREE.Mesh(globeGeo, globeMat));
+
+// Inner glow core — warm golden heart (subtle)
+const coreMat = new THREE.MeshBasicMaterial({ color: 0xC9A84C, transparent: true, opacity: 0.04 });
+globeGroup.add(new THREE.Mesh(new THREE.SphereGeometry(4.0, 32, 32), coreMat));
+
+// Atmospheric glow halo — subtle edge glow
+const haloMat = new THREE.MeshBasicMaterial({
+  color: 0xC9A84C, transparent: true, opacity: 0.035, side: THREE.BackSide
+});
+globeGroup.add(new THREE.Mesh(new THREE.SphereGeometry(5.5, 48, 48), haloMat));
+
+// Second, larger, fainter halo
+const halo2Mat = new THREE.MeshBasicMaterial({
+  color: 0xC9A84C, transparent: true, opacity: 0.015, side: THREE.BackSide
+});
+globeGroup.add(new THREE.Mesh(new THREE.SphereGeometry(6.2, 32, 32), halo2Mat));
+
+// Core point light — warm golden glow
+const coreLight = new THREE.PointLight(0xC9A84C, 1.2, 20);
+globeGroup.add(coreLight);
+
+/* ==========================================
+   LATITUDE / LONGITUDE GRID LINES
+   ========================================== */
+const gridLineMat = new THREE.LineBasicMaterial({ color: 0xC9A84C, transparent: true, opacity: 0.06 });
+// Latitude lines every 30°
+for (let lat = -60; lat <= 60; lat += 30) {
+  const pts = [];
+  for (let lon = 0; lon <= 360; lon += 5) {
+    pts.push(ll(lat, lon, 5.01));
+  }
+  const g = new THREE.BufferGeometry().setFromPoints(pts);
+  globeGroup.add(new THREE.Line(g, gridLineMat));
+}
+// Longitude lines every 30°
+for (let lon = 0; lon < 360; lon += 30) {
+  const pts = [];
+  for (let lat = -90; lat <= 90; lat += 5) {
+    pts.push(ll(lat, lon, 5.01));
+  }
+  const g = new THREE.BufferGeometry().setFromPoints(pts);
+  globeGroup.add(new THREE.Line(g, gridLineMat));
+}
+
+/* ==========================================
+   CONTINENTS AS CONNECTED LINES (not dots)
+   Each continent is a LineLoop — a continuous gold
+   coastline drawn on the globe surface.
+   ========================================== */
+const coastMat = new THREE.LineBasicMaterial({ color: 0xC9A84C, transparent: true, opacity: 0.55 });
+const coastBrightMat = new THREE.LineBasicMaterial({ color: 0xC9A84C, transparent: true, opacity: 0.35 });
+
+// Organized by continent — each is drawn as a connected line
+const continents = {
+  northAmerica: [
+    [72,-168],[71,-156],[70,-143],[68,-138],[65,-135],[62,-132],[60,-140],[58,-152],[56,-158],[54,-162],[56,-153],[55,-133],[53,-131],[51,-128],[49,-127],[48,-124],[46,-124],[44,-124],[42,-124],[40,-124],[38,-123],[36,-122],[35,-120],[33,-118],[32,-117],[30,-115],[28,-113],[26,-110],[25,-108],[23,-106],[22,-100],[20,-97],[19,-96],[18,-95],[18,-92],[19,-89],[20,-87],[22,-85],[24,-83],[25,-81],[26,-80],[27,-80],[28,-82],[30,-82],[30,-84],[29,-85],[30,-88],[30,-90],[31,-88],[32,-85],[33,-80],[34,-78],[35,-76],[37,-76],[39,-75],[40,-74],[41,-72],[42,-71],[43,-70],[44,-69],[44,-67],[45,-67],[46,-64],[47,-62],[47,-60],[48,-59],[49,-58],[50,-57],[52,-56],[53,-56],[55,-58],[56,-60],[58,-60],[60,-62],[61,-64],[63,-65],[64,-68],[65,-68],[66,-70],[67,-72],[68,-76],[69,-79],[70,-84],[71,-87],[72,-92],[73,-96],[73,-108],[72,-120],[72,-135],[72,-150],[72,-168]
+  ],
+  centralAmerica: [
+    [18,-95],[17,-92],[16,-90],[15,-89],[14,-88],[14,-87],[13,-87],[13,-84],[12,-84],[11,-84],[10,-84],[10,-83],[9,-83],[9,-80],[9,-79],[8,-78],[8,-77],[7,-77]
+  ],
+  southAmerica: [
+    [12,-72],[11,-73],[10,-75],[9,-76],[8,-77],[7,-77],[5,-77],[3,-78],[1,-79],[0,-80],[-1,-80],[-3,-80],[-5,-80],[-5,-78],[-4,-76],[-3,-75],[-4,-73],[-6,-75],[-8,-76],[-10,-77],[-12,-77],[-14,-76],[-16,-75],[-17,-73],[-18,-71],[-19,-70],[-20,-67],[-20,-64],[-21,-60],[-22,-58],[-23,-57],[-24,-56],[-25,-57],[-27,-55],[-28,-54],[-30,-52],[-31,-51],[-33,-52],[-34,-54],[-35,-56],[-37,-57],[-38,-58],[-39,-60],[-40,-62],[-41,-63],[-42,-64],[-43,-65],[-45,-66],[-46,-67],[-48,-68],[-49,-70],[-50,-72],[-51,-73],[-52,-70],[-53,-68],[-54,-66],[-55,-66],[-54,-68],[-53,-70],[-52,-72],[-51,-74],[-50,-75],[-48,-74],[-46,-73],[-44,-73],[-42,-73],[-40,-72],[-38,-70],[-36,-68],[-34,-68],[-32,-68],[-30,-70],[-28,-70],[-26,-67],[-24,-66],[-22,-66],[-20,-68],[-18,-62],[-16,-55],[-14,-51],[-12,-50],[-10,-50],[-8,-52],[-6,-55],[-4,-56],[-2,-58],[0,-62],[1,-64],[2,-66],[4,-68],[5,-70],[6,-72],[8,-73],[10,-74],[12,-72]
+  ],
+  europe: [
+    [36,-10],[37,-8],[38,-6],[39,-4],[40,-3],[41,-2],[42,0],[42,2],[43,3],[44,4],[45,4],[46,3],[47,2],[48,1],[49,0],[50,-1],[51,2],[52,4],[53,5],[54,7],[54,9],[55,10],[56,11],[56,13],[57,14],[58,17],[59,18],[60,20],[60,22],[61,24],[62,25],[63,27],[64,28],[65,26],[66,25],[67,24],[68,22],[69,20],[70,19],[70,22],[70,26],[70,30],[68,29],[66,28],[64,30],[62,30],[61,29],[60,28],[59,26],[58,25],[57,22],[56,20],[55,18],[54,16],[53,14],[52,12],[51,10],[50,7],[49,4],[48,2],[47,0],[46,-2],[44,-4],[42,-6],[40,-8],[38,-9],[37,-10],[36,-10]
+  ],
+  britishIsles: [
+    [50,-6],[51,-4],[52,-3],[53,-3],[54,-3],[55,-4],[56,-5],[57,-6],[58,-5],[59,-3],[58,-2],[57,0],[56,0],[55,-1],[54,-1],[53,0],[52,-1],[51,-3],[50,-6]
+  ],
+  scandinavia: [
+    [56,12],[57,11],[58,11],[59,10],[60,10],[61,8],[62,6],[63,7],[64,10],[65,12],[66,14],[67,15],[68,16],[69,17],[70,19],[70,22],[70,26],[70,30],[69,28],[68,22],[67,20],[66,18],[65,16],[64,14],[63,12],[62,12],[61,12],[60,14],[59,16],[58,15],[57,13],[56,12]
+  ],
+  africa: [
+    [37,10],[36,2],[35,-1],[35,-5],[34,-7],[33,-8],[32,-10],[31,-10],[30,-10],[28,-13],[26,-15],[24,-16],[22,-17],[20,-17],[18,-16],[16,-17],[14,-17],[12,-16],[11,-15],[10,-15],[8,-14],[6,-11],[5,-10],[4,-8],[4,-5],[5,-4],[6,-1],[5,1],[4,2],[3,5],[2,8],[1,10],[0,10],[-1,9],[-3,10],[-4,12],[-5,12],[-6,12],[-8,13],[-10,14],[-12,14],[-14,14],[-16,12],[-18,12],[-20,13],[-22,14],[-24,14],[-25,15],[-26,15],[-28,16],[-29,17],[-30,18],[-31,18],[-32,18],[-33,18],[-34,19],[-35,20],[-34,22],[-33,24],[-32,27],[-31,29],[-30,31],[-28,33],[-26,33],[-24,35],[-22,36],[-20,35],[-18,36],[-16,37],[-14,40],[-12,42],[-10,43],[-8,44],[-6,42],[-4,40],[-2,40],[0,42],[2,42],[4,42],[6,42],[8,43],[10,44],[12,44],[14,44],[16,44],[18,42],[20,40],[22,38],[24,36],[26,34],[28,34],[30,32],[32,32],[34,28],[35,22],[36,14],[37,10]
+  ],
+  madagascar: [
+    [-12,49],[-14,48],[-16,46],[-18,44],[-20,44],[-22,44],[-24,45],[-25,47],[-24,48],[-22,48],[-20,49],[-18,50],[-16,50],[-14,50],[-12,49]
+  ],
+  asia: [
+    [42,30],[44,35],[46,38],[48,40],[50,42],[52,45],[55,50],[58,55],[60,58],[62,60],[64,62],[66,64],[68,66],[70,68],[72,70],[72,80],[72,100],[72,120],[72,140],[70,150],[68,155],[66,160],[68,170],[70,178],[68,-175],[65,-168],[63,-170],[62,-175],[60,166],[58,160],[56,155],[54,155],[52,155],[50,156],[48,150],[46,145],[44,143],[42,140],[40,138],[38,137],[36,136],[35,133],[34,130],[32,125],[30,122],[28,118],[26,115],[24,112],[22,110],[20,106],[18,104],[16,103],[14,104],[12,106],[10,106],[8,105],[6,104],[5,103],[4,102],[2,103],[1,104],[1,108],[2,112],[1,116],[0,118],[-2,118],[-4,116],[-6,114],[-8,116],[-8,120],[-6,122],[-4,125],[-2,128],[0,130],[2,130],[4,128],[6,126],[8,124],[10,120],[12,118],[14,116],[16,116],[18,115],[20,110],[22,108],[22,106],[20,104],[18,100],[17,100],[16,98],[14,99],[12,100],[10,98],[8,96],[6,98],[4,100],[2,100],[0,98],[-1,98],[0,95],[2,92],[5,90],[8,88],[10,85],[12,82],[14,80],[16,78],[18,76],[20,73],[22,70],[24,68],[26,65],[28,62],[30,56],[32,50],[34,44],[36,38],[38,36],[40,32],[42,30]
+  ],
+  japan: [
+    [31,131],[33,130],[35,133],[36,136],[37,137],[38,139],[39,140],[40,140],[41,141],[42,142],[43,144],[44,145],[45,142],[44,143],[42,141],[40,140],[38,138],[36,137],[34,135],[33,133],[31,131]
+  ],
+  india: [
+    [28,68],[26,67],[24,68],[22,69],[20,70],[18,73],[16,74],[14,76],[12,77],[10,76],[8,77],[7,78],[8,79],[10,80],[12,80],[14,80],[16,82],[18,84],[20,86],[20,88],[22,88],[24,89],[26,90],[28,88],[30,86],[30,82],[30,78],[28,73],[28,68]
+  ],
+  australia: [
+    [-12,132],[-13,130],[-14,127],[-15,125],[-17,123],[-19,121],[-21,116],[-23,114],[-25,114],[-27,114],[-29,115],[-31,116],[-33,116],[-34,117],[-35,118],[-35,120],[-36,122],[-37,125],[-38,128],[-38,132],[-38,136],[-38,140],[-38,144],[-37,146],[-36,148],[-35,149],[-34,151],[-33,152],[-31,153],[-29,153],[-27,153],[-25,152],[-23,150],[-21,149],[-19,147],[-17,146],[-16,145],[-15,142],[-14,140],[-13,137],[-12,135],[-12,132]
+  ],
+  newZealand: [
+    [-35,173],[-37,175],[-38,176],[-40,176],[-42,174],[-44,172],[-46,168],[-47,167],[-46,168],[-44,170],[-42,172],[-40,174],[-38,176],[-36,175],[-35,173]
+  ],
+  greenland: [
+    [60,-44],[62,-42],[64,-40],[66,-38],[68,-34],[70,-28],[72,-24],[74,-20],[76,-18],[78,-20],[80,-24],[82,-30],[82,-40],[80,-50],[78,-58],[76,-64],[74,-68],[72,-58],[70,-52],[68,-50],[66,-48],[64,-46],[62,-44],[60,-44]
+  ]
+};
+
+// Draw each continent as a smooth connected line — interpolate between points for higher detail
+const R = 5.02;
+Object.values(continents).forEach(coords => {
+  // Interpolate: add 2 intermediate points between each pair for smoother coastlines
+  const smoothed = [];
+  for (let i = 0; i < coords.length; i++) {
+    smoothed.push(coords[i]);
+    if (i < coords.length - 1) {
+      const [lat1,lon1] = coords[i];
+      const [lat2,lon2] = coords[i+1];
+      smoothed.push([lat1 + (lat2-lat1)*0.33, lon1 + (lon2-lon1)*0.33]);
+      smoothed.push([lat1 + (lat2-lat1)*0.66, lon1 + (lon2-lon1)*0.66]);
+    }
+  }
+  const pts = smoothed.map(([lat,lon]) => ll(lat, lon, R));
+  const g = new THREE.BufferGeometry().setFromPoints(pts);
+  globeGroup.add(new THREE.Line(g, coastMat));
+});
+
+// Inner detail lines — approximate major geographic features for visual richness
+const innerLines = [
+  // Great Lakes outline
+  [[48,-92],[47,-90],[46,-87],[45,-84],[44,-83],[43,-82],[42,-83],[43,-85],[44,-87],[46,-89],[47,-91],[48,-92]],
+  // Mississippi River approx
+  [[47,-90],[45,-90],[43,-91],[41,-91],[39,-90],[37,-89],[35,-89],[33,-90],[31,-91],[30,-90],[29,-90]],
+  // Nile River approx
+  [[30,31],[28,31],[26,32],[24,33],[22,33],[20,34],[18,34],[16,33],[14,33],[12,33],[10,34],[8,34],[5,32],[3,30]],
+  // Amazon River approx
+  [[-3,-60],[-4,-58],[-4,-55],[-3,-53],[-3,-50],[-2,-48],[-1,-50],[0,-52],[0,-55],[-1,-58],[-2,-60]],
+  // Ural Mountains approx
+  [[50,60],[52,59],[54,59],[56,60],[58,60],[60,60],[62,61],[64,62],[66,64],[68,66]],
+  // Himalayas approx
+  [[28,72],[29,76],[30,80],[29,84],[28,86],[27,88],[28,90],[29,92],[28,95],[27,97]],
+  // Mediterranean Sea coastline (south Europe)
+  [[36,0],[37,2],[37,5],[37,8],[38,10],[38,12],[37,14],[36,16],[35,18],[35,20],[35,22],[35,24],[36,26],[37,28],[36,30],[35,32],[34,34],[33,35]],
+  // Mediterranean Africa side
+  [[35,0],[34,2],[34,5],[33,8],[33,10],[32,12],[33,14],[33,16],[32,18],[32,20],[31,22],[30,24],[31,26],[31,28],[31,30],[31,32],[32,34]],
+  // Indonesian archipelago
+  [[-2,105],[-3,108],[-5,110],[-6,112],[-7,114],[-8,116],[-8,118],[-7,120],[-6,122],[-5,124],[-4,126],[-3,128],[-2,130]],
+  // Philippines approx
+  [[18,120],[16,120],[14,121],[12,122],[10,124],[8,126],[6,126]],
+  // UK detail
+  [[54,-1],[53,0],[52,1],[51,1],[50,0]],
+  // Caspian Sea
+  [[47,50],[45,50],[43,50],[41,50],[39,50],[37,50],[38,52],[40,52],[42,52],[44,52],[46,52],[47,50]],
+  // Arabian Peninsula
+  [[28,48],[26,50],[24,52],[22,55],[20,56],[18,54],[16,52],[14,50],[14,45],[16,42],[18,40],[20,40],[22,39],[24,38],[26,40],[28,44],[28,48]],
+  // Korean Peninsula
+  [[38,126],[37,127],[36,127],[35,128],[34,128],[33,127]],
+  // Sri Lanka
+  [[10,80],[9,80],[8,80],[7,81],[8,82],[9,81],[10,80]],
+  // New Guinea
+  [[-2,132],[-3,135],[-4,137],[-5,140],[-6,142],[-7,144],[-8,146],[-7,148],[-6,148],[-5,146],[-4,144],[-3,142],[-2,140],[-2,138],[-2,135],[-2,132]],
+  // Borneo
+  [[7,117],[5,118],[3,118],[1,117],[0,115],[-1,113],[-2,112],[-1,110],[0,110],[2,110],[4,112],[5,114],[7,117]],
+  // Caribbean islands chain
+  [[18,-65],[17,-63],[16,-62],[15,-61],[14,-61],[13,-60],[12,-60],[11,-61],[10,-62]],
+];
+const innerMat = new THREE.LineBasicMaterial({ color: 0xC9A84C, transparent: true, opacity: 0.25 });
+innerLines.forEach(coords => {
+  const pts = coords.map(([lat,lon]) => ll(lat, lon, R));
+  const g = new THREE.BufferGeometry().setFromPoints(pts);
+  globeGroup.add(new THREE.Line(g, innerMat));
+});
+
+// Scatter fill particles inside continents for visual density
+const fillPositions = [];
+Object.values(continents).forEach(coords => {
+  coords.forEach(([lat,lon]) => {
+    for (let k = 0; k < 2; k++) {
+      fillPositions.push(
+        ...ll(lat + (Math.random()-0.5)*3, lon + (Math.random()-0.5)*3, 5.015).toArray()
+      );
+    }
+  });
+});
+const fillGeo = new THREE.BufferGeometry();
+fillGeo.setAttribute('position', new THREE.Float32BufferAttribute(fillPositions, 3));
+const fillMat = new THREE.PointsMaterial({ color: 0xC9A84C, size: 0.025, transparent: true, opacity: 0.18 });
+globeGroup.add(new THREE.Points(fillGeo, fillMat));
+
+/* ==========================================
+   CITY POSITIONS (for arc endpoints only — NO meshes, NO lights)
+   ========================================== */
+const cities = [
+  [40.7,-74],[51.5,-0.1],[50.1,8.7],[25.2,55.3],[1.3,103.8],[35.7,139.7],[22.3,114.2],[-23.5,-46.6]
+];
+const cityPositions = cities.map(([lat,lon]) => ll(lat, lon, 5.04));
+
+/* ==========================================
+   CITY ARC CONNECTIONS
+   ========================================== */
+const arcLineMat = new THREE.LineBasicMaterial({ color: 0xC9A84C, transparent: true, opacity: 0.15 });
+for (let i = 0; i < cityPositions.length; i++) {
+  const j = (i + 1) % cityPositions.length;
+  const start = cityPositions[i];
+  const end = cityPositions[j];
+  const mid = start.clone().add(end).multiplyScalar(0.5);
+  mid.normalize().multiplyScalar(7);
+  const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+  const pts = curve.getPoints(50);
+  const g = new THREE.BufferGeometry().setFromPoints(pts);
+  globeGroup.add(new THREE.Line(g, arcLineMat));
+}
+
+/* ==========================================
+   ORBIT RINGS (clean metallic — no token node spheres)
+   ========================================== */
+const ringMetalMat = new THREE.MeshStandardMaterial({
+  color: 0xC9A84C, metalness: 0.9, roughness: 0.15,
+  emissive: 0xC9A84C, emissiveIntensity: 0.04
+});
+const rings = [];
+[0, Math.PI/3, 2*Math.PI/3].forEach((tilt, i) => {
+  const radius = 6.3 + i * 0.5;
+  const r = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.03, 12, 160), ringMetalMat.clone());
+  r.rotation.x = tilt;
+  r.rotation.z = i * 0.3;
+  globeGroup.add(r);
+  rings.push(r);
+});
+
+/* ==========================================
+   AMBIENT PARTICLES
+   ========================================== */
+const particleCount = window.innerWidth < 768 ? 800 : 2200;
+const pPositions = new Float32Array(particleCount * 3);
+const pColors = new Float32Array(particleCount * 3);
+const goldCol = new THREE.Color(0xC9A84C);
+const silverCol = new THREE.Color(0x888888);
+for (let i = 0; i < particleCount; i++) {
+  pPositions[i*3] = (Math.random() - 0.5) * 80;
+  pPositions[i*3+1] = (Math.random() - 0.5) * 40;
+  pPositions[i*3+2] = (Math.random() - 0.5) * 80;
+  const c = Math.random() < 0.35 ? goldCol : silverCol;
+  pColors[i*3] = c.r; pColors[i*3+1] = c.g; pColors[i*3+2] = c.b;
+}
+const pGeo = new THREE.BufferGeometry();
+pGeo.setAttribute('position', new THREE.Float32BufferAttribute(pPositions, 3));
+pGeo.setAttribute('color', new THREE.Float32BufferAttribute(pColors, 3));
+const pMat = new THREE.PointsMaterial({ size: 0.04, transparent: true, opacity: 0.5, vertexColors: true, depthWrite: false });
+scene.add(new THREE.Points(pGeo, pMat));
+
+/* ==========================================
+   CAMERA SYSTEM — Custom lerp (not GSAP scrub)
+   
+   Scroll → target position (via keyframe interpolation)
+   Render loop → lerp actual camera toward target
+   
+   Manual scroll: target changes gradually → camera follows smoothly
+   Nav click: scroll jumps → target jumps → camera lerps DIRECTLY there
+   No intermediate stops. No fighting. Truly independent.
+   ========================================== */
+
+// Camera keyframe positions at each scroll progress breakpoint
+const camKeyframes = [
+  { p: 0.000, x: 0,   y: 2,  z: 22, lx: 0, ly: 0,  lz: 0 },
+  { p: 0.141, x: -10, y: 4,  z: 16, lx: 0, ly: 0,  lz: 0 },
+  { p: 0.281, x: -6,  y: 6,  z: 8,  lx: 0, ly: 1,  lz: 0 },
+  { p: 0.422, x: 8,   y: 3,  z: 12, lx: 0, ly: 0,  lz: 0 },
+  { p: 0.563, x: 12,  y: 1,  z: 8,  lx: 0, ly: 0,  lz: 0 },
+  { p: 0.703, x: 4,   y: -1, z: 18, lx: 0, ly: -1, lz: 0 },
+  { p: 0.844, x: -8,  y: 3,  z: 14, lx: 0, ly: 0,  lz: 0 },
+  { p: 0.984, x: 0,   y: 2,  z: 20, lx: 0, ly: 0,  lz: 0 },
+];
+
+const cam = { x: 0, y: 2, z: 22, lx: 0, ly: 0, lz: 0 };
+
+function lerpVal(a, b, t) { return a + (b - a) * t; }
+
+function getCamTarget(progress) {
+  let i = 0;
+  for (let j = 1; j < camKeyframes.length; j++) {
+    if (progress < camKeyframes[j].p) break;
+    i = j;
+  }
+  const a = camKeyframes[i];
+  const b = camKeyframes[Math.min(i + 1, camKeyframes.length - 1)];
+  const range = b.p - a.p;
+  const t = range > 0 ? Math.max(0, Math.min(1, (progress - a.p) / range)) : 0;
+  return {
+    x: lerpVal(a.x, b.x, t), y: lerpVal(a.y, b.y, t), z: lerpVal(a.z, b.z, t),
+    lx: lerpVal(a.lx, b.lx, t), ly: lerpVal(a.ly, b.ly, t), lz: lerpVal(a.lz, b.lz, t)
+  };
+}
+
+function updateCameraAndUI() {
+  const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+  const scrollMax = document.documentElement.scrollHeight - window.innerHeight;
+  const p = scrollMax > 0 ? Math.min(1, scrollTop / scrollMax) : 0;
+
+  // UI updates
+  document.getElementById('progressBar').style.width = (p * 100) + '%';
+  updateSections(p);
+  const ho = p < 0.06 ? 1 : p < 0.12 ? 1 - ((p - 0.06) / 0.06) : 0;
+  document.getElementById('hero').style.opacity = ho;
+  document.getElementById('hero').style.pointerEvents = ho > 0.1 ? 'auto' : 'none';
+  document.getElementById('scrollHint').style.opacity = p < 0.03 ? 1 : p < 0.06 ? 1 - ((p - 0.03) / 0.03) : 0;
+  if (p > 0.02) { document.getElementById('mainNav').classList.add('scrolled'); }
+  else { document.getElementById('mainNav').classList.remove('scrolled'); }
+
+  // Camera: calculate target from scroll, then lerp toward it
+  const target = getCamTarget(p);
+  const f = 0.045; // lerp factor — smooth ~1s glide
+  cam.x = lerpVal(cam.x, target.x, f);
+  cam.y = lerpVal(cam.y, target.y, f);
+  cam.z = lerpVal(cam.z, target.z, f);
+  cam.lx = lerpVal(cam.lx, target.lx, f);
+  cam.ly = lerpVal(cam.ly, target.ly, f);
+  cam.lz = lerpVal(cam.lz, target.lz, f);
+}
+
+/* ==========================================
+   SECTION VISIBILITY
+   ========================================== */
+const sections = [
+  { id: 'challenge', start: 0.11, end: 0.26 },
+  { id: 'platform', start: 0.25, end: 0.40 },
+  { id: 'technology', start: 0.39, end: 0.54 },
+  { id: 'serve', start: 0.52, end: 0.66 },
+  { id: 'why', start: 0.65, end: 0.77 },
+  { id: 'team', start: 0.75, end: 0.88 },
+  { id: 'contact', start: 0.87, end: 1.01 },
+];
+
+function updateSections(p) {
+  sections.forEach(s => {
+    const el = document.getElementById(s.id);
+    if (!el) return;
+    // Very fast fade — 0.5% of scroll to go from invisible to fully visible
+    const fadeInEnd = s.start + 0.005;
+    const fadeOut = s.end - 0.005;
+
+    let opacity = 0;
+    if (p >= s.start && p <= fadeInEnd) {
+      opacity = (p - s.start) / 0.005;
+    } else if (p > fadeInEnd && p < fadeOut) {
+      opacity = 1;
+    } else if (p >= fadeOut && p <= s.end) {
+      opacity = 1 - (p - fadeOut) / 0.005;
+    }
+    opacity = Math.max(0, Math.min(1, opacity));
+    el.style.opacity = opacity;
+    el.classList.toggle('visible', opacity > 0.1);
+  });
+}
+
+// Initial state: hide all sections then immediately show what should be visible
+sections.forEach(s => {
+  const el = document.getElementById(s.id);
+  if (el) el.style.opacity = 0;
+});
+updateSections(0);
+
+/* ==========================================
+   MOUSE PARALLAX
+   ========================================== */
+let mouseX = 0, mouseY = 0;
+document.addEventListener('mousemove', (e) => {
+  mouseX = (e.clientX / window.innerWidth - 0.5) * 0.8;
+  mouseY = (e.clientY / window.innerHeight - 0.5) * 0.4;
+  // Cursor glow
+  const glow = document.getElementById('cursorGlow');
+  glow.style.left = e.clientX + 'px';
+  glow.style.top = e.clientY + 'px';
+});
+
+/* ==========================================
+   TYPEWRITER EFFECT
+   ========================================== */
+const typeText = 'THE FUTURE OF CAPITAL MARKETS';
+let typeIndex = 0;
+const typeEl = document.getElementById('typewriter');
+function typeWrite() {
+  if (typeIndex <= typeText.length) {
+    typeEl.textContent = typeText.slice(0, typeIndex) + (typeIndex < typeText.length ? '█' : '');
+    typeIndex++;
+    setTimeout(typeWrite, 60);
+  }
+}
+setTimeout(typeWrite, 800);
+
+/* ==========================================
+   STAT COUNTER ANIMATION
+   ========================================== */
+document.querySelectorAll('[data-count]').forEach(el => {
+  const target = parseInt(el.dataset.count);
+  let current = 0;
+  const step = Math.ceil(target / 40);
+  const interval = setInterval(() => {
+    current += step;
+    if (current >= target) { current = target; clearInterval(interval); }
+    el.textContent = current;
+  }, 40);
+});
+
+/* ==========================================
+   RENDER LOOP
+   ========================================== */
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+
+  // Update camera target from scroll + lerp camera toward it
+  updateCameraAndUI();
+
+  // Apply camera position + mouse parallax
+  camera.position.set(cam.x + mouseX, cam.y - mouseY * 0.5, cam.z);
+  camera.lookAt(cam.lx, cam.ly, cam.lz);
+
+  // Rotate globe
+  globeGroup.rotation.y += 0.0008;
+
+  // Rotate rings
+  rings.forEach((r, i) => {
+    r.rotation.y += (i === 1 ? -0.003 : 0.002) * (1 + i * 0.3);
+  });
+
+  // Gentle core light pulse — barely perceptible breathing
+  coreLight.intensity = 1.2 + Math.sin(t * 0.3) * 0.1;
+
+  // Drift particles slowly
+  const pos = pGeo.attributes.position;
+  for (let i = 0; i < Math.min(500, particleCount); i++) {
+    pos.array[i*3] += (Math.random() - 0.5) * 0.002;
+    pos.array[i*3+1] += (Math.random() - 0.5) * 0.001;
+    pos.array[i*3+2] += (Math.random() - 0.5) * 0.002;
+  }
+  pos.needsUpdate = true;
+
+  composer.render();
+}
+animate();
+
+/* ==========================================
+   RESIZE HANDLER
+   ========================================== */
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
+  bloomPass.resolution.set(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>
